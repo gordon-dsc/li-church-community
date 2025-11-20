@@ -4,5 +4,31 @@ format: html
 ---
 
 ```{r packages}
-
+library(tidyverse)
 ```
+```{r}
+eo_ny <- eo_ny|>
+  filter(SUBSECTION == "03",
+         FOUNDATION == "10")
+```
+
+```{r}
+eo_sample <- eo_ny|>
+  mutate(full_address = str_c(STREET, CITY, STATE, ZIP, sep = "_"))|>
+  slice_head(n = 5)
+```
+
+```{r}
+prog<- eo_sample_data_coordinates|>
+  unnest_longer(col = geo_loc)|>
+  unnest_wider(col = geo_loc)|>
+    mutate(
+    lat = as.numeric(lat),
+    lon = as.numeric(lon)
+  ) |>
+  filter(
+    between(lat, 40.49, 41.15),
+    between(lon, -73.75, -71.75)
+  )
+```
+
