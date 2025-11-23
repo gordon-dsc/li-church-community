@@ -4,5 +4,38 @@ format: html
 ---
 
 ```{r packages}
+library(ggplot2)
+```
+
+
+```{r}
+library(ggmap)
+library(maps)
+
+map_data_li <- map_data("county", "new york")
+map_data_li <- map_data_li |> filter(region == "new york", subregion %in% c("nassau", "suffolk", "queens", "bronx"))
+
+ggplot() +
+  geom_polygon(data = map_data_li, aes(x = long, y = lat, group = group),
+               fill = "grey95", color = "black") +
+  geom_point(data = hm, aes(x = lon, y = lat),
+             color = "blue", alpha = 0.6, size = 2) +
+  coord_fixed(1.3) +
+  labs(title = "Church Locations on Long Island, Queens, and Bronx") +
+  theme_minimal()
 
 ```
+
+```{r}
+li_churches_coordinates|>
+  unnest_longer(col = geo_loc)|>
+  filter(!str_detect(geo_loc, pattern = "NA"))|>
+  unnest_wider(col = geo_loc)|>
+  distinct(EIN, .keep_all = TRUE)|>
+  mutate(lat = as.numeric(lat),
+    lon = as.numeric(lon))|>
+  filter(between(lat, 40.49, 41.15),
+    between(lon, -74.26, -73.5))|>
+  group_by(city)
+```
+

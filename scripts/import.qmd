@@ -4,6 +4,50 @@ format: html
 ---
 
 ```{r packages}
+library(tidyverse)
+library(rvest)
+library(readr)
+library(httr2)
+library(purrr)
+```
 
+```{r}
+eo_ny <- read_csv("~/Desktop/dsc-210-final-proj/li-church-community/data/imported_data/eo_ny.csv")
+```
+
+```{r}
+url <- "https://us1.locationiq.com/v1/search"
+
+geocode <- function(location){
+  Sys.sleep(1)
+  request(url)|>
+    req_url_query(key = "pk.1f71792b3e75a36adb3bd38ceef8adf0",
+                  q = location,
+                  format = "json")|>
+    req_perform()|>
+    resp_body_json()
+}
+
+safe_geocode <- purrr::possibly(
+  geocode,
+  otherwise = list(lat = NA, lon = NA)
+)
+
+li_churches_coordinates <- li_churches|>
+  mutate(geo_loc = map(.x = full_address,
+                       .f = safe_geocode,
+                       .progress = TRUE))
+```
+```{r}
+#Scrape Long Island Zip Codes
+
+zip_code_url <- "https://www.lifamilies.com/community/long-island-new-york-zip-codes.aspx"
+
+read_html(zip_code_url)|>
+  html_elements("div")|>
+  html_text2()|>
+  str_split("\n") -> zip_scraped
+
+zip_codes <- tibble(zip_scraped)
 ```
 

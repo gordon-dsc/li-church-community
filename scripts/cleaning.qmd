@@ -7,15 +7,60 @@ format: html
 library(tidyverse)
 ```
 ```{r}
+#Filter out Non Religious Organizations. Add Full Address Column to be Searched on. Trim Zip Code
 eo_ny <- eo_ny|>
   filter(SUBSECTION == "03",
-         FOUNDATION == "10")
+         FOUNDATION == "10")|>
+  mutate(full_address = str_c(STREET, CITY, STATE, ZIP, sep = "_"),
+         zip_code = str_extract(ZIP, pattern = "[0-9]{5}"))
+```
+```{r}
+#Clean scraped zip code data from website
+
+zip_codes|>
+  mutate(row_num = row_number())|>
+  filter(row_num == 14)|>
+  unnest_longer(col = zip_scraped)|>
+  filter(str_length(zip_scraped) > 1)|>
+  mutate(zip_code = str_extract(zip_scraped, pattern = "[0-9]{5}"))|>
+  mutate(city = str_remove(zip_scraped, pattern = "[0-9]{5}"))|>
+  dplyr::select(zip_code, city) -> li_zip_codes
+```
+```{r}
+#Filter eo_ny by zip code. 
+
+li_churches <- li_zip_codes|>
+  left_join(eo_ny, by = "zip_code")
+```
+```{r}
+li_churches|>
+  mutate(ntee_code = str_extract(NTEE_CD, pattern = "[0-9]{2}"),
+         ntee_code = as.numeric(ntee_code))|>
+  filter(is.na(ntee_code) | between(ntee_code, 20, 22))|>
+  filter(!str_detect(NAME, regex("islam", ignore_case = TRUE)),
+         !str_detect(NAME, regex("school", ignore_case = TRUE)),
+         !str_detect(NAME, regex("trust", ignore_case = TRUE)),
+         !str_detect(NAME, regex("israel", ignore_case = TRUE)),
+         !str_detect(NAME, regex("synagogue", ignore_case = TRUE)),
+         !str_detect(NAME, regex("quran", ignore_case = TRUE)),
+         !str_detect(NAME, regex("synogogue", ignore_case = TRUE)),
+         !str_detect(NAME, regex("masjid", ignore_case = TRUE)),
+         !str_detect(NAME, regex("jew", ignore_case = TRUE)),
+         !str_detect(NAME, regex("torah", ignore_case = TRUE)),
+         !is.na(NAME))|>
+  distinct(NAME, .keep_all = TRUE)-> li_churches
 ```
 
 ```{r}
-eo_sample <- eo_ny|>
-  mutate(full_address = str_c(STREET, CITY, STATE, ZIP, sep = "_"))|>
-  slice_head(n = 5)
+li_churches_coordinates|>
+  unnest_longer(col = geo_loc)|>
+  filter(!str_detect(geo_loc, pattern = "NA"))|>
+  unnest_wider(col = geo_loc)|>
+  distinct(EIN, .keep_all = TRUE)|>
+  mutate(lat = as.numeric(lat),
+    lon = as.numeric(lon))|>
+  filter(between(lat, 40.49, 41.15),
+    between(lon, -74.26, -71))-> hm
 ```
 
 ```{r}
