@@ -70,7 +70,7 @@ The data/ folder contains two sub-folders: (1) imported_data/ and (2) cleaned_da
 
 ### The scripts/ folder
 
-The scripts/ folder contains three Quarto notebooks: (1) import.qmd, (2) cleaning.qmd, and (3) exploration.qmd. All code related to the import of data (i.e., your `{httr2}` and `{rvest}` code) should be **well-annotated** and organized within import.qmd. All cleaning activities (e.g., rectangling, reshaping, parsing, coercion, recoding, etc.) should be well-annotated and organized within cleaning.qmd. 
+The scripts/ folder contains three Quarto notebooks: (1) import.qmd, (2) cleaning.qmd, and (3) exploration.qmd. All code related to the import of data (i.e., your `{httr2}` and `{rvest}` code) should be **well-annotated** and organized within import.qmd. All cleaning activities (e.g., rectangling, reshaping, parsing, coercion, recoding, etc.) should be well-annotated and organized within cleaning.qmd.
 
 ### The output/ folder
 

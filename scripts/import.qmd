@@ -12,10 +12,13 @@ library(purrr)
 ```
 
 ```{r}
+#irs data CSV
 eo_ny <- read_csv("~/Desktop/dsc-210-final-proj/li-church-community/data/imported_data/eo_ny.csv")
 ```
 
 ```{r}
+#function to use LocationIQ API to match address to coordinates.
+
 url <- "https://us1.locationiq.com/v1/search"
 
 geocode <- function(location){
@@ -49,5 +52,62 @@ read_html(zip_code_url)|>
   str_split("\n") -> zip_scraped
 
 zip_codes <- tibble(zip_scraped)
+```
+
+
+```{r}
+sc_census_block_group <- read.csv("~/Desktop/dsc-210-final-proj/li-church-community/data/imported_data/Census_Block_Group.csv")
+sc_census_tract <- read.csv("~/Desktop/dsc-210-final-proj/li-church-community/data/imported_data/Census_Tract.csv")
+```
+
+```{r}
+census_url <- "https://api.census.gov/data/2020/dec/dhc?get=group(H1)&for=block%20group:1&in=state:06%20county:073%20tract:018700"
+
+request(census_url)|>
+  req_url_query(key = "7dd0f70c686d841c0dbfc11f190405f2f2317073")|>
+  req_perform()|>
+  resp_body_json() -> census_test
+```
+
+```{r}
+get_dhc_by_geoid <- function(geoid, group, key) {
+  
+  state  <- stringr::str_sub(geoid, 1, 2)
+  county <- stringr::str_sub(geoid, 3, 5)
+  tract  <- stringr::str_sub(geoid, 6, 11)
+  bg     <- stringr::str_sub(geoid, 12, 12)
+  
+  base_url <- "https://api.census.gov/data/2020/dec/dhc"
+  
+  request(base_url) |> 
+    req_url_query(get = paste0("group(", group, ")"),
+      `for` = paste0("block group:", bg),
+      `in` = paste0("state:", state, " county:", county, " tract:", tract),
+      key = key) |>
+    req_perform()|>
+    resp_body_json()
+}
+```
+
+```{r}
+geoids <- sc_census_block_groups$GEOID
+
+census_request <- geoids |>
+  crossing(dhc_groups)
+
+census_dhc_data <- pmap(list(geoids, dhc_groups),
+                        ~)
+```
+
+```{r}
+census_dhc_url <- "https://api.census.gov/data/2020/dec/dhc/groups.html"
+
+read_html(census_dhc_url)|>
+  html_elements("td")|>
+  html_text2()|>
+  str_extract(pattern = "^.{1,7}$")|>
+  str_remove(pattern = "RACE")|>
+  str_remove(pattern = "TENURE")-> dhc_groups
+
 ```
 

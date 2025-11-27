@@ -52,6 +52,7 @@ li_churches|>
 ```
 
 ```{r}
+#filter by coordinates
 li_churches_coordinates|>
   unnest_longer(col = geo_loc)|>
   filter(!str_detect(geo_loc, pattern = "NA"))|>
@@ -59,21 +60,25 @@ li_churches_coordinates|>
   distinct(EIN, .keep_all = TRUE)|>
   mutate(lat = as.numeric(lat),
     lon = as.numeric(lon))|>
-  filter(between(lat, 40.49, 41.15),
-    between(lon, -74.26, -71))-> hm
+  filter(between(lat, li_boundaries$min_lat, li_boundaries$max_lat),
+         between(lon, li_boundaries$min_lon, li_boundaries$max_lon))-> map_data
 ```
 
 ```{r}
-prog<- eo_sample_data_coordinates|>
-  unnest_longer(col = geo_loc)|>
-  unnest_wider(col = geo_loc)|>
-    mutate(
-    lat = as.numeric(lat),
-    lon = as.numeric(lon)
-  ) |>
-  filter(
-    between(lat, 40.49, 41.15),
-    between(lon, -73.75, -71.75)
-  )
+map_data_li|>
+  summarize(max_lat = max(lat),
+            min_lat = min(lat),
+            max_lon = max(long),
+            min_lon = min(long)) -> li_boundaries
 ```
+
+```{r}
+#dhc_groups <- tibble(dhc_groups)
+
+dhc_groups|>
+  mutate(dhc_groups = na_if(dhc_groups, ""))|>
+  drop_na()-> dhc_groups
+```
+
+
 
