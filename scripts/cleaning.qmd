@@ -73,7 +73,7 @@ map_data_li|>
 ```
 
 ```{r}
-#dhc_groups <- tibble(dhc_groups)
+dhc_groups <- tibble(dhc_groups)
 
 dhc_groups|>
   mutate(dhc_groups = na_if(dhc_groups, ""))|>
