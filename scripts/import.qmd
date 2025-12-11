@@ -9,6 +9,7 @@ library(rvest)
 library(readr)
 library(httr2)
 library(purrr)
+library(janitor)
 ```
 
 ```{r}
@@ -59,6 +60,11 @@ zip_codes <- tibble(zip_scraped)
 sc_census_block_group <- read.csv("~/Desktop/dsc-210-final-proj/li-church-community/data/imported_data/Census_Block_Group.csv")
 sc_census_tract <- read.csv("~/Desktop/dsc-210-final-proj/li-church-community/data/imported_data/Census_Tract.csv")
 ```
+```{r}
+nassau_county_tract <- read_delim("https://www2.census.gov/geo/maps/DC2020/PL20/st36_ny/censustract_maps/c36059_nassau/DC20CT_C36059_CT2MS.txt", delim = ";")
+suffolk_county_tract <- read_delim("https://www2.census.gov/geo/maps/DC2020/PL20/st36_ny/censustract_maps/c36103_suffolk/DC20CT_C36103_CT2MS.txt", delim = ";")
+```
+
 
 ```{r}
 census_url <- "https://api.census.gov/data/2020/dec/dhc?get=group(H1)&for=block%20group:1&in=state:06%20county:073%20tract:018700"
@@ -75,34 +81,31 @@ get_dhc_by_geoid <- function(geoid, group, key) {
   state  <- stringr::str_sub(geoid, 1, 2)
   county <- stringr::str_sub(geoid, 3, 5)
   tract  <- stringr::str_sub(geoid, 6, 11)
-  bg     <- stringr::str_sub(geoid, 12, 12)
   
   base_url <- "https://api.census.gov/data/2020/dec/dhc"
   
-  request(base_url) |> 
-    req_url_query(get = paste0("group(", group, ")"),
-      `for` = paste0("block group:", bg),
-      `in` = paste0("state:", state, " county:", county, " tract:", tract),
-      key = key) |>
-    req_perform()|>
+  request(base_url) |>
+    req_url_query(
+      get = paste0("group(", group, ")"),
+      `for` = paste0("tract:", tract),
+      `in`  = paste0("state:", state, " county:", county),
+      key   = key
+    ) |>
+    req_perform() |>
     resp_body_json()
 }
 ```
 
 ```{r}
-geoids <- sc_census_block_group$GEOID
+#geoids <- sc_census_block_group$GEOID
+#geoids <- tibble(geoids)
 
-census_request <- tibble(geoid = geoids) |>
-  tidyr::crossing(group = dhc_groups)
-
-census_request <- census_request |>
-  mutate(across(.cols = everything(),
-                ~ as.character(.)))
+sc_geo_id <- tibble(geo_id = suffolk_county_tract$FULLCODE)
+nc_geo_id <- tibble(geo_id = nassau_county_tract$FULLCODE)
 
 
-census_dhc_data <- pmap_dfr(
-  list(census_request$geoid, census_request$group),
-  ~ get_dhc_by_geoid(..1, ..2, key = "YOUR_KEY"))
+li_geo_id <- bind_rows(sc_geo_id, nc_geo_id)
+  
 ```
 
 ```{r}
@@ -116,4 +119,36 @@ read_html(census_dhc_url)|>
   str_remove(pattern = "TENURE")-> dhc_groups
 
 ```
+
+```{r}
+key = "7dd0f70c686d841c0dbfc11f190405f2f2317073"
+li_race_data <- purrr::map2(.x = race_geoids$geoids,
+                            .y = race_geoids$survey,
+                            ~ get_dhc_by_geoid(.x,
+                                               .y,
+                                               "7dd0f70c686d841c0dbfc11f190405f2f2317073"),
+                            .progress = TRUE)
+                                               
+```
+
+```{r}
+#li_race_data <- tibble(li_race_data)
+
+li_race_data|>
+  unnest_longer(col = li_race_data)|>
+  unnest_wider(col = li_race_data, names_sep = "_")|>
+  distinct()|>
+  row_to_names(1) -> qq
+
+```
+
+```{r}
+#collect P8 Colnames
+race_base_url <- "https://api.census.gov/data/2020/dec/dhc/groups/P8.html"
+
+read_html(race_base_url)|>
+  html_elements("td")|>
+  html_text2()-> race_web_page
+```
+
 

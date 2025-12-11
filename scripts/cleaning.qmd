@@ -80,5 +80,25 @@ dhc_groups|>
   drop_na()-> dhc_groups
 ```
 
+```{r}
+#get colnames from race web page variables
+#race_web_page <- tibble(race_web_page)
+
+#race_web_page |>
+#  rename(web_info = race_web_page)|>
+#  filter(str_detect(web_info, pattern = "^[P!]")) -> race_web_page
+
+race_web_page |>
+  filter(!str_detect(web_info, pattern = "^P8$"))|>
+  pivot_wider(names_from = web_info, values_from = web_info)|>
+  select(-starts_with("P"))|>
+  mutate(GEO_ID = "GEOID",
+         NAME = "NAME",
+         -> race_cols
+```
+
+```{r}
+
+```
 
 
