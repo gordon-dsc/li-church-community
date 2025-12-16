@@ -12,6 +12,8 @@ library(purrr)
 library(janitor)
 library(stringr)
 library(sf)
+library(ggmap)
+library(maps)
 ```
 
 ```{r}
@@ -44,6 +46,14 @@ li_churches_coordinates <- li_churches|>
                        .f = safe_geocode,
                        .progress = TRUE))
 ```
+
+```{r}
+#import data for long and lat boundaries 
+map_data_li <- map_data("county", "new york")
+map_data_li <- map_data_li |> filter(region == "new york", subregion %in% c("nassau", "suffolk", "queens", "bronx"))
+```
+
+
 ```{r}
 #Scrape Long Island Zip Codes
 
@@ -90,17 +100,6 @@ get_dhc_by_geoid <- function(geoid, group, key) {
 }
 ```
 
-```{r}
-#geoids <- sc_census_block_group$GEOID
-#geoids <- tibble(geoids)
-
-sc_geo_id <- tibble(geo_id = suffolk_county_tract$FULLCODE)
-nc_geo_id <- tibble(geo_id = nassau_county_tract$FULLCODE)
-
-
-li_geo_id <- bind_rows(sc_geo_id, nc_geo_id)
-  
-```
 
 ```{r}
 #scrape all dhc group surveys from census website 
@@ -129,14 +128,7 @@ li_race_data <- purrr::map2(.x = race_geoids$geoids,
 ```
 
 ```{r}
-li_race_data <- tibble(li_race_data)
 
-li_race_data|>
-  unnest_longer(col = li_race_data)|>
-  unnest_wider(col = li_race_data, names_sep = "_")|>
-  distinct()|>
-  row_to_names(1)|>m
-  select(-ends_with("A"))-> li_race_data
 
 ```
 
