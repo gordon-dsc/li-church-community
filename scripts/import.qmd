@@ -57,20 +57,15 @@ read_html(zip_code_url)|>
 zip_codes <- tibble(zip_scraped)
 ```
 
-
 ```{r}
-sc_census_block_group <- read.csv("~/Desktop/dsc-210-final-proj/li-church-community/data/imported_data/Census_Block_Group.csv")
-sc_census_tract <- read.csv("~/Desktop/dsc-210-final-proj/li-church-community/data/imported_data/Census_Tract.csv")
-```
-```{r}
-nassau_county_tract <- read_delim("https://www2.census.gov/geo/maps/DC2020/PL20/st36_ny/censustract_maps/c36059_nassau/DC20CT_C36059_CT2MS.txt", delim = ";")
-suffolk_county_tract <- read_delim("https://www2.census.gov/geo/maps/DC2020/PL20/st36_ny/censustract_maps/c36103_suffolk/DC20CT_C36103_CT2MS.txt", delim = ";")
-```
-
-```{r}
-#nassau county shapefile import
+#shapefile imports
 nassau_bg <- st_read("/Users/jamesccoats/Downloads/tl_2020_36059_bg20/tl_2020_36059_bg20.shp") |>
   st_transform(4326)
+
+suffolk_bg <- st_read("/Users/jamesccoats/Downloads/tl_2020_36103_bg20/tl_2020_36103_bg20.shp")|>
+  st_transform(4326)
+
+long_island_bg <- bind_rows(nassau_bg, suffolk_bg)
 ```
 
 
