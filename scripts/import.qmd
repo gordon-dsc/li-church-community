@@ -164,4 +164,7 @@ closest_bg <- function(lat1, lon1, lat2, lon2){
 }
 ```
 
+```{r}
+testing <- closest_bg(long_island_bg$intptlat, long_island_bg$intptlon, map_data$lat, map_data$lon)
+```
 
