@@ -41,11 +41,16 @@ safe_geocode <- purrr::possibly(
   otherwise = list(lat = NA, lon = NA)
 )
 
+```
+
+```{r}
+#use safe geocode function to get coordinates from addresses
 li_churches_coordinates <- li_churches|>
   mutate(geo_loc = purrr::map(.x = full_address,
                        .f = safe_geocode,
                        .progress = TRUE))
 ```
+
 
 ```{r}
 #import data for long and lat boundaries 
@@ -85,21 +90,19 @@ long_island_bg |>
 ```{r}
 #function get census data by geoid, group. 
 get_dhc_by_geoid <- function(geoid, group, key) {
-  state  <- str_sub(geoid, 1, 2)
-  county <- str_sub(geoid, 3, 5)
-  tract  <- str_sub(geoid, 6, 11)
-  bg <- str_sub(geo_id, 12)
+  state  <- stringr::str_sub(geoid, 1, 2)
+  county <- stringr::str_sub(geoid, 3, 5)
+  tract  <- stringr::str_sub(geoid, 6, 11)
+  bg     <- stringr::str_sub(geoid, 12, 12)
   
   base_url <- "https://api.census.gov/data/2020/dec/dhc"
   
-  request(base_url) |>
-    req_url_query(
-      get = paste0("group(", group, ")"),
+  request(base_url) |> 
+    req_url_query(get = paste0("group(", group, ")"),
       `for` = paste0("block group:", bg),
-      `in`  = paste0("state:", state, " county:", county, "tract:", tract),
-      key   = key
-    ) |>
-    req_perform() |>
+      `in` = paste0("state:", state, " county:", county, " tract:", tract),
+      key = key) |>
+    req_perform()|>
     resp_body_json()
 }
 ```
@@ -122,19 +125,14 @@ read_html(census_dhc_url)|>
 ```{r}
 #use get_dhc_by_geoid function to collect long_island census information. 
 key = "7dd0f70c686d841c0dbfc11f190405f2f2317073"
-li_race_data <- purrr::map2(.x = race_geoids$geoids,
-                            .y = race_geoids$survey,
-                            ~ get_dhc_by_geoid(.x,
-                                               .y,
-                                               "7dd0f70c686d841c0dbfc11f190405f2f2317073"),
-                            .progress = TRUE)
+li_race_data <- purrr::map(.x = long_island_bg$geoid,
+                    ~ get_dhc_by_geoid(.x,
+                                       "P8",
+                                       "7dd0f70c686d841c0dbfc11f190405f2f2317073"),
+                    .progress = TRUE)
                                                
 ```
 
-```{r}
-
-
-```
 
 ```{r}
 #scrape P8 Colnames to better name columns. 
@@ -143,6 +141,27 @@ race_base_url <- "https://api.census.gov/data/2020/dec/dhc/groups/P8.html"
 read_html(race_base_url)|>
   html_elements("td")|>
   html_text2()-> race_web_page
+```
+
+```{r}
+#euclidian distance function
+euclidian_distance <- function(x1, y1, x2, y2){
+  sqrt((x2-x1)^2 + (y2-y1)^2)
+}
+```
+
+```{r}
+
+closest_bg <- function(lat1, lon1, lat2, lon2){
+  df <- tibble(lat1, lon1, lat2, lon2)
+  
+  df|>
+    group_by(lat1, lon1)|>
+    mutate(distance = euclidian_distance(lat1, lon1, lat2, lon2))|>
+    arrange(distance)|>
+    slice_max(n = 1)|>
+    ungroup()
+}
 ```
 
 
