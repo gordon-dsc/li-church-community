@@ -5,6 +5,7 @@ format: html
 
 ```{r packages}
 library(tidyverse)
+library(janitor)
 ```
 ```{r}
 #Filter out Non Religious Organizations. Add Full Address Column to be Searched on. Trim Zip Code
@@ -82,11 +83,11 @@ dhc_groups|>
 
 ```{r}
 #get colnames from race web page variables
-#race_web_page <- tibble(race_web_page)
+race_web_page <- tibble(race_web_page)
 
-#race_web_page |>
-#  rename(web_info = race_web_page)|>
-#  filter(str_detect(web_info, pattern = "^[P!]")) -> race_web_page
+race_web_page |>
+  rename(web_info = race_web_page)|>
+  filter(str_detect(web_info, pattern = "^[P!]")) -> race_web_page
 
 race_web_page |>
   filter(!str_detect(web_info, pattern = "^P8$"))|>
@@ -94,11 +95,31 @@ race_web_page |>
   select(-starts_with("P"))|>
   mutate(GEO_ID = "GEOID",
          NAME = "NAME",
-         -> race_cols
+         state = "state",
+         county = "county",
+         tract = "tract",
+         block_group = "block_group")|>
+  relocate(
+    GEO_ID,
+    NAME,
+    .before = 1) |>
+  relocate(
+    state, county, tract, block_group,
+    .after = last_col()) -> race_cols
+
+colnames(li_race_data) <- unlist(race_cols[1, ], use.names = FALSE)
+```
+
+```{r}
+#clean up column names, extract geoid
+li_race_data |>
+  janitor::clean_names()|>
+  mutate(geoid = str_remove_all(geoid, pattern = "1500000US"),
+         geoid = as.numeric(geoid))|>
+  left_join(sc_census_block_group, by = c("geoid" = "GEOID")) -> li_race_data_clean
 ```
 
 ```{r}
 
 ```
-
 
