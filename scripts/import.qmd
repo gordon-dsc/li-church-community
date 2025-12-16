@@ -10,6 +10,7 @@ library(readr)
 library(httr2)
 library(purrr)
 library(janitor)
+library(stringr)
 ```
 
 ```{r}
@@ -132,13 +133,14 @@ li_race_data <- purrr::map2(.x = race_geoids$geoids,
 ```
 
 ```{r}
-#li_race_data <- tibble(li_race_data)
+li_race_data <- tibble(li_race_data)
 
 li_race_data|>
   unnest_longer(col = li_race_data)|>
   unnest_wider(col = li_race_data, names_sep = "_")|>
   distinct()|>
-  row_to_names(1) -> qq
+  row_to_names(1)|>m
+  select(-ends_with("A"))-> li_race_data
 
 ```
 
