@@ -68,17 +68,8 @@ suffolk_bg <- st_read("/Users/jamesccoats/Downloads/tl_2020_36103_bg20/tl_2020_3
 long_island_bg <- bind_rows(nassau_bg, suffolk_bg)
 ```
 
-
 ```{r}
-census_url <- "https://api.census.gov/data/2020/dec/dhc?get=group(H1)&for=block%20group:1&in=state:06%20county:073%20tract:018700"
-
-request(census_url)|>
-  req_url_query(key = "7dd0f70c686d841c0dbfc11f190405f2f2317073")|>
-  req_perform()|>
-  resp_body_json() -> census_test
-```
-
-```{r}
+#function get census data by geoid, group. 
 get_dhc_by_geoid <- function(geoid, group, key) {
   
   state  <- stringr::str_sub(geoid, 1, 2)
@@ -112,6 +103,8 @@ li_geo_id <- bind_rows(sc_geo_id, nc_geo_id)
 ```
 
 ```{r}
+#scrape all dhc group surveys from census website 
+#not used in final csv
 census_dhc_url <- "https://api.census.gov/data/2020/dec/dhc/groups.html"
 
 read_html(census_dhc_url)|>
@@ -124,6 +117,7 @@ read_html(census_dhc_url)|>
 ```
 
 ```{r}
+#use get_dhc_by_geoid function to collect long_island census information. 
 key = "7dd0f70c686d841c0dbfc11f190405f2f2317073"
 li_race_data <- purrr::map2(.x = race_geoids$geoids,
                             .y = race_geoids$survey,
@@ -147,7 +141,7 @@ li_race_data|>
 ```
 
 ```{r}
-#collect P8 Colnames
+#scrape P8 Colnames to better name columns. 
 race_base_url <- "https://api.census.gov/data/2020/dec/dhc/groups/P8.html"
 
 read_html(race_base_url)|>
