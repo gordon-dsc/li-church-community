@@ -76,23 +76,27 @@ suffolk_bg <- st_read("/Users/jamesccoats/Downloads/tl_2020_36103_bg20/tl_2020_3
   st_transform(4326)
 
 long_island_bg <- bind_rows(nassau_bg, suffolk_bg)
+long_island_bg |>
+  clean_names()|>
+  rename_with(~ str_replace_all(.x, "20$", ""))|>
+  mutate(intptlat = str_remove_all(intptlat, "\\+")) -> long_island_bg
 ```
 
 ```{r}
 #function get census data by geoid, group. 
 get_dhc_by_geoid <- function(geoid, group, key) {
-  
-  state  <- stringr::str_sub(geoid, 1, 2)
-  county <- stringr::str_sub(geoid, 3, 5)
-  tract  <- stringr::str_sub(geoid, 6, 11)
+  state  <- str_sub(geoid, 1, 2)
+  county <- str_sub(geoid, 3, 5)
+  tract  <- str_sub(geoid, 6, 11)
+  bg <- str_sub(geo_id, 12)
   
   base_url <- "https://api.census.gov/data/2020/dec/dhc"
   
   request(base_url) |>
     req_url_query(
       get = paste0("group(", group, ")"),
-      `for` = paste0("tract:", tract),
-      `in`  = paste0("state:", state, " county:", county),
+      `for` = paste0("block group:", bg),
+      `in`  = paste0("state:", state, " county:", county, "tract:", tract),
       key   = key
     ) |>
     req_perform() |>
