@@ -7,6 +7,7 @@ format: html
 library(tidyverse)
 library(janitor)
 ```
+
 ```{r}
 #Filter out Non Religious Organizations. Add Full Address Column to be Searched on. Trim Zip Code
 eo_ny <- eo_ny|>
@@ -17,7 +18,6 @@ eo_ny <- eo_ny|>
 ```
 ```{r}
 #Clean scraped zip code data from website
-
 zip_codes|>
   mutate(row_num = row_number())|>
   filter(row_num == 14)|>
@@ -27,13 +27,15 @@ zip_codes|>
   mutate(city = str_remove(zip_scraped, pattern = "[0-9]{5}"))|>
   dplyr::select(zip_code, city) -> li_zip_codes
 ```
+
 ```{r}
 #Filter eo_ny by zip code. 
-
 li_churches <- li_zip_codes|>
   left_join(eo_ny, by = "zip_code")
 ```
+
 ```{r}
+#filter out non Christian churches with keywords. 
 li_churches|>
   mutate(ntee_code = str_extract(NTEE_CD, pattern = "[0-9]{2}"),
          ntee_code = as.numeric(ntee_code))|>
@@ -54,6 +56,12 @@ li_churches|>
 
 ```{r}
 #filter by coordinates
+map_data_li|>
+  summarize(max_lat = max(lat),
+            min_lat = min(lat),
+            max_lon = max(long),
+            min_lon = min(long)) -> li_boundaries
+
 li_churches_coordinates|>
   unnest_longer(col = geo_loc)|>
   filter(!str_detect(geo_loc, pattern = "NA"))|>
@@ -66,20 +74,27 @@ li_churches_coordinates|>
 ```
 
 ```{r}
-map_data_li|>
-  summarize(max_lat = max(lat),
-            min_lat = min(lat),
-            max_lon = max(long),
-            min_lon = min(long)) -> li_boundaries
-```
-
-```{r}
+#create column of all dhc groups. 
+#not used in final csv
 dhc_groups <- tibble(dhc_groups)
 
 dhc_groups|>
   mutate(dhc_groups = na_if(dhc_groups, ""))|>
   drop_na()-> dhc_groups
 ```
+
+```{r}
+#wrangle data from census api request 
+li_race_data <- tibble(li_race_data)
+
+li_race_data|>
+  unnest_longer(col = li_race_data)|>
+  unnest_wider(col = li_race_data, names_sep = "_")|>
+  distinct()|>
+  row_to_names(1)|>
+  select(-ends_with("A"))-> li_race_data
+```
+
 
 ```{r}
 #get colnames from race web page variables
