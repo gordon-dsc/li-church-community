@@ -130,6 +130,12 @@ li_race_data <- purrr::map(.x = long_island_bg$geoid,
                                        "P8",
                                        "7dd0f70c686d841c0dbfc11f190405f2f2317073"),
                     .progress = TRUE)
+
+li_household_data <- purrr::map(.x = long_island_bg$geoid,
+                                ~ get_dhc_by_geoid(.x,
+                                                   "P16",
+                                                   "7dd0f70c686d841c0dbfc11f190405f2f2317073"),
+                                .progress = TRUE)
                                                
 ```
 
@@ -144,27 +150,11 @@ read_html(race_base_url)|>
 ```
 
 ```{r}
-#euclidian distance function
-euclidian_distance <- function(x1, y1, x2, y2){
-  sqrt((x2-x1)^2 + (y2-y1)^2)
-}
+#scrape P16 ColNames
+household_base_url <- "https://api.census.gov/data/2020/dec/dhc/groups/P16.html"
+
+read_html(household_base_url)|>
+  html_table()
 ```
 
-```{r}
-
-closest_bg <- function(lat1, lon1, lat2, lon2){
-  df <- tibble(lat1, lon1, lat2, lon2)
-  
-  df|>
-    group_by(lat1, lon1)|>
-    mutate(distance = euclidian_distance(lat1, lon1, lat2, lon2))|>
-    arrange(distance)|>
-    slice_max(n = 1)|>
-    ungroup()
-}
-```
-
-```{r}
-testing <- closest_bg(long_island_bg$intptlat, long_island_bg$intptlon, map_data$lat, map_data$lon)
-```
 
