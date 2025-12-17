@@ -5,6 +5,15 @@ format: html
 
 ```{r packages}
 library(tidyverse)
+library(rvest)
+library(readr)
+library(httr2)
+library(purrr)
+library(janitor)
+library(stringr)
+library(sf)
+library(ggmap)
+library(maps)
 library(janitor)
 ```
 
