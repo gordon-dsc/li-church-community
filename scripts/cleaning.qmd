@@ -167,3 +167,29 @@ household_columns |>
   
 ```
 
+```{r}
+#wrangle household data
+li_household_data <- tibble(li_household_data)
+li_household_data |>
+  unnest_longer(col = li_household_data)|>
+  unnest_wider(col = li_household_data, names_sep = "_")|>
+  distinct()|>
+  row_to_names(1)|>
+  select(-ends_with("A")) -> household_testing
+```
+
+```{r}
+clean_census_api_call <- function(df){
+  df <- tibble(df)
+  colname <- names(df)[1]
+  df |>
+    unnest_longer(col = colname)|>
+    unnest_wider(col = colname, names_sep = "_")|>
+    distinct()|>
+    row_to_names(1)|>
+    select(-ends_with("A")) 
+}
+
+cleaned_household <- clean_census_api_call(li_household_data)
+```
+
