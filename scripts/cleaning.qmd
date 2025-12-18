@@ -143,18 +143,6 @@ li_race_data |>
   mutate(geoid = as.character(geoid)) -> li_race_data_clean
 ```
 
-```{r}
-#spacial join
-map_data_sf <- st_as_sf(map_data, coords = c("lon", "lat"), crs = 4326)
-li_race_data_clean <- st_as_sf(li_race_data_clean, sf_column_name = "geometry")
-st_crs(li_race_data_clean) <- 4326
-
-st_crs(li_race_data_clean)
-st_crs(map_data_sf)
-
-
-joined_data <- st_join(map_data_sf, li_race_data_clean, join = st_within)
-```
 
 
 ```{r}
@@ -167,7 +155,8 @@ clean_census_api_call <- function(df){
     unnest_wider(col = colname, names_sep = "_")|>
     distinct()|>
     row_to_names(1)|>
-    select(-ends_with("A")) 
+    select(-ends_with("A"))|>
+    mutate(GEOID = str_remove_all(geoid, pattern = "1500000US"))
 }
 
 cleaned_household <- clean_census_api_call(li_household_data)
@@ -175,3 +164,31 @@ cleaned_age <- clean_census_api_call(li_age_data)
 cleaned_tenure <- clean_census_api_call(li_tenure_data)
 ```
 
+```{r}
+#create dataframes to receive the column names
+create_prepped_df <- function(df){
+  total_cols <- length(colnames(df))
+  end_col <- total_cols - 4
+  df|>
+    select(1:end_col)|>
+    select(-2)
+}
+
+cleaned_tenure <- create_prepped_df(cleaned_tenure)
+colnames(cleaned_tenure) <- tenure_cols[1, ]
+```
+
+
+
+```{r}
+#spacial join
+map_data_sf <- st_as_sf(map_data, coords = c("lon", "lat"), crs = 4326)
+li_race_data_clean <- st_as_sf(li_race_data_clean, sf_column_name = "geometry")
+st_crs(li_race_data_clean) <- 4326
+
+st_crs(li_race_data_clean)
+st_crs(map_data_sf)
+
+
+joined_data <- st_join(map_data_sf, li_race_data_clean, join = st_within)
+```
