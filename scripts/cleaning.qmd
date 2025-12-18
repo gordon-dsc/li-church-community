@@ -82,57 +82,6 @@ li_churches_coordinates|>
          between(lon, li_boundaries$min_lon, li_boundaries$max_lon))-> map_data
 ```
 
-```{r}
-#create column of all dhc groups. 
-#not used in final csv
-dhc_groups <- tibble(dhc_groups)
-
-dhc_groups|>
-  mutate(dhc_groups = na_if(dhc_groups, ""))|>
-  drop_na()-> dhc_groups
-```
-
-```{r}
-#wrangle data from census api request 
-li_race_data <- tibble(li_race_data)
-
-li_race_data|>
-  unnest_longer(col = li_race_data)|>
-  unnest_wider(col = li_race_data, names_sep = "_")|>
-  distinct()|>
-  row_to_names(1)|>
-  select(-ends_with("A"))-> li_race_data
-```
-
-
-```{r}
-#get colnames from race web page variables
-race_web_page <- tibble(race_web_page)
-
-race_web_page |>
-  rename(web_info = race_web_page)|>
-  filter(str_detect(web_info, pattern = "^[P!]")) -> race_web_page
-
-race_web_page |>
-  filter(!str_detect(web_info, pattern = "^P8$"))|>
-  pivot_wider(names_from = web_info, values_from = web_info)|>
-  select(-starts_with("P"))|>
-  mutate(GEO_ID = "GEOID",
-         NAME = "NAME",
-         state = "state",
-         county = "county",
-         tract = "tract",
-         block_group = "block_group")|>
-  relocate(
-    GEO_ID,
-    NAME,
-    .before = 1) |>
-  relocate(
-    state, county, tract, block_group,
-    .after = last_col()) -> race_cols
-
-colnames(li_race_data) <- unlist(race_cols[1, ], use.names = FALSE)
-```
 
 ```{r}
 #clean up column names, extract geoid
@@ -142,7 +91,6 @@ li_race_data |>
   left_join(long_island_bg, by = "geoid")|>
   mutate(geoid = as.character(geoid)) -> li_race_data_clean
 ```
-
 
 
 ```{r}
@@ -162,6 +110,10 @@ clean_census_api_call <- function(df){
 cleaned_household <- clean_census_api_call(li_household_data)
 cleaned_age <- clean_census_api_call(li_age_data)
 cleaned_tenure <- clean_census_api_call(li_tenure_data)
+cleaned_race <- clean_census_api_call(li_race_data)
+cleaned_household_size <- clean_census_api_call(li_household_size)
+cleaned_urban_rural <- clean_census_api_call(li_urban_rural)
+
 ```
 
 ```{r}
@@ -174,10 +126,24 @@ create_prepped_df <- function(df){
     select(-2)
 }
 
-cleaned_tenure <- create_prepped_df(cleaned_tenure)
-colnames(cleaned_tenure) <- tenure_cols[1, ]
+prepped_tenure <- create_prepped_df(cleaned_tenure)
+prepped_age <- create_prepped_df(cleaned_age)
+prepped_household <- create_prepped_df(cleaned_household)
+prepped_race <- create_prepped_df(cleaned_race)
+prepped_household_size <- create_prepped_df(cleaned_household_size)
+prepped_urban_rural <- create_prepped_df(cleaned_urban_rural)
+
 ```
 
+```{r}
+#add colnames to prepped dfs
+colnames(prepped_tenure) <- tenure_cols[1, ]
+colnames(prepped_age) <- age_cols[1, ]
+colnames(prepped_household) <- household_cols[1, ]
+colnames(prepped_race) <- race_cols[1, ]
+colnames(prepped_household_size) <- household_cols[1, ]
+colnames(prepped_urban_rural) <- urban_rural_cols[1, ]
+```
 
 
 ```{r}
