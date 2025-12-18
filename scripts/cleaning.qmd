@@ -156,29 +156,9 @@ st_crs(map_data_sf)
 joined_data <- st_join(map_data_sf, li_race_data_clean, join = st_within)
 ```
 
-```{r}
-#clean household columns names
-household_table <- tibble(col = household_table)
-household_columns <- household_table[[1]][[1]]
-
-household_columns |>
-  select(Label) |>
-  pivot_wider(names_from = Label, values_from = Label) -> household_cols
-  
-```
 
 ```{r}
-#wrangle household data
-li_household_data <- tibble(li_household_data)
-li_household_data |>
-  unnest_longer(col = li_household_data)|>
-  unnest_wider(col = li_household_data, names_sep = "_")|>
-  distinct()|>
-  row_to_names(1)|>
-  select(-ends_with("A")) -> household_testing
-```
-
-```{r}
+#function to clean data from the census calls. 
 clean_census_api_call <- function(df){
   df <- tibble(df)
   colname <- names(df)[1]
@@ -191,5 +171,7 @@ clean_census_api_call <- function(df){
 }
 
 cleaned_household <- clean_census_api_call(li_household_data)
+cleaned_age <- clean_census_api_call(li_age_data)
+cleaned_tenure <- clean_census_api_call(li_tenure_data)
 ```
 

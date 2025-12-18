@@ -136,25 +136,39 @@ li_household_data <- purrr::map(.x = long_island_bg$geoid,
                                                    "P16",
                                                    "7dd0f70c686d841c0dbfc11f190405f2f2317073"),
                                 .progress = TRUE)
+li_age_data <- purrr::map(.x = long_island_bg$geoid,
+                          ~ get_dhc_by_geoid(.x,
+                                             "P13",
+                                             "7dd0f70c686d841c0dbfc11f190405f2f2317073"),
+                          .progress = TRUE)
+li_tenure_data <- purrr::map(.x = long_island_bg$geoid,
+                            ~ get_dhc_by_geoid(.x,
+                                               "H4",
+                                               key),
+                            .progress = TRUE)
                                                
 ```
 
-
 ```{r}
-#scrape P8 Colnames to better name columns. 
-race_base_url <- "https://api.census.gov/data/2020/dec/dhc/groups/P8.html"
 
-read_html(race_base_url)|>
-  html_elements("td")|>
-  html_text2()-> race_web_page
-```
+get_group_colnames <- function(group){
+  base_url <- str_glue("https://api.census.gov/data/2020/dec/dhc/groups/", group, ".html")
+  
+  read_html(base_url)|>
+    html_table() -> group_table
+  
+  group_table <- tibble(col = group_table)
+  group_columns <- group_table[[1]][[1]]
 
-```{r}
-#scrape P16 ColNames
-household_base_url <- "https://api.census.gov/data/2020/dec/dhc/groups/P16.html"
+  group_columns |>
+    select(Label) |>
+    pivot_wider(names_from = Label, values_from = Label)
+}
 
-read_html(household_base_url)|>
-  html_table()
+age_cols <- get_group_colnames("P13")
+household_cols <- get_group_colnames("P16")
+race_cols <- get_group_colnames("P8")
+tenure_cols <- get_group_colnames("H4")
 ```
 
 
