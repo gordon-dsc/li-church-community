@@ -111,7 +111,7 @@ cleaned_household <- clean_census_api_call(li_household_data)
 cleaned_age <- clean_census_api_call(li_age_data)
 cleaned_tenure <- clean_census_api_call(li_tenure_data)
 cleaned_race <- clean_census_api_call(li_race_data)
-cleaned_household_size <- clean_census_api_call(li_household_size)
+cleaned_household_size <- clean_census_api_call(li_household_size_data)
 cleaned_urban_rural <- clean_census_api_call(li_urban_rural)
 
 ```
@@ -143,6 +143,14 @@ colnames(prepped_household) <- household_cols[1, ]
 colnames(prepped_race) <- race_cols[1, ]
 colnames(prepped_household_size) <- household_cols[1, ]
 colnames(prepped_urban_rural) <- urban_rural_cols[1, ]
+
+#clean column names 
+prepped_tenure <- clean_names(prepped_tenure)
+prepped_age <- clean_names(prepped_age)
+prepped_household <- clean_names(prepped_household)
+prepped_race <- clean_names(prepped_race)
+prepped_household_size <- clean_names(prepped_household_size)
+prepped_urban_rural <- clean_names(prepped_urban_rural)
 ```
 
 

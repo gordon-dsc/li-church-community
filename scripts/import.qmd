@@ -14,7 +14,15 @@ library(stringr)
 library(sf)
 library(ggmap)
 library(maps)
+library(keyring)
 ```
+
+```{r}
+#set keys
+key_set(service = "census_api", username = "me")
+key_set(service = "location_api", username = "me") 
+```
+
 
 ```{r}
 #irs data CSV
@@ -25,11 +33,12 @@ eo_ny <- read_csv("~/Desktop/dsc-210-final-proj/li-church-community/data/importe
 #function to use LocationIQ API to match address to coordinates.
 
 url <- "https://us1.locationiq.com/v1/search"
+locationiq_key <- key_get(service = "location_api", username = "me")
 
 geocode <- function(location){
   Sys.sleep(1)
   request(url)|>
-    req_url_query(key = "pk.1f71792b3e75a36adb3bd38ceef8adf0",
+    req_url_query(key = locationiq_key,
                   q = location,
                   format = "json")|>
     req_perform()|>
@@ -74,10 +83,10 @@ zip_codes <- tibble(zip_scraped)
 
 ```{r}
 #shapefile imports
-nassau_bg <- st_read("/Users/jamesccoats/Downloads/tl_2020_36059_bg20/tl_2020_36059_bg20.shp") |>
+nassau_bg <- st_read("./data/imported_data/tl_2020_36059_bg20.shp") |>
   st_transform(4326)
 
-suffolk_bg <- st_read("/Users/jamesccoats/Downloads/tl_2020_36103_bg20/tl_2020_36103_bg20.shp")|>
+suffolk_bg <- st_read("./data/imported_data/tl_2020_36059_bg20.shp")|>
   st_transform(4326)
 
 long_island_bg <- bind_rows(nassau_bg, suffolk_bg)
@@ -109,48 +118,44 @@ get_dhc_by_geoid <- function(geoid, group, key) {
 
 
 ```{r}
-#scrape all dhc group surveys from census website 
-#not used in final csv
-census_dhc_url <- "https://api.census.gov/data/2020/dec/dhc/groups.html"
-
-read_html(census_dhc_url)|>
-  html_elements("td")|>
-  html_text2()|>
-  str_extract(pattern = "^.{1,7}$")|>
-  str_remove(pattern = "RACE")|>
-  str_remove(pattern = "TENURE")-> dhc_groups
-
-```
-
-```{r}
 #use get_dhc_by_geoid function to collect long_island census information. 
-key = "7dd0f70c686d841c0dbfc11f190405f2f2317073"
+census_key = key_get(service = "census_api", username = "me")
 li_race_data <- purrr::map(.x = long_island_bg$geoid,
                     ~ get_dhc_by_geoid(.x,
-                                       "P8",
-                                       "7dd0f70c686d841c0dbfc11f190405f2f2317073"),
+                                       "P6",
+                                       census_key),
                     .progress = TRUE)
 
 li_household_data <- purrr::map(.x = long_island_bg$geoid,
                                 ~ get_dhc_by_geoid(.x,
                                                    "P16",
-                                                   "7dd0f70c686d841c0dbfc11f190405f2f2317073"),
+                                                   census_key),
                                 .progress = TRUE)
 li_age_data <- purrr::map(.x = long_island_bg$geoid,
                           ~ get_dhc_by_geoid(.x,
                                              "P13",
-                                             "7dd0f70c686d841c0dbfc11f190405f2f2317073"),
+                                             census_key),
                           .progress = TRUE)
 li_tenure_data <- purrr::map(.x = long_island_bg$geoid,
                             ~ get_dhc_by_geoid(.x,
                                                "H4",
-                                               key),
+                                               census_key),
+                            .progress = TRUE)
+li_household_size_data <- purrr::map(.x = long_island_bg$geoid,
+                            ~ get_dhc_by_geoid(.x,
+                                               "H9",
+                                               census_key),
+                            .progress = TRUE)
+li_urban_rural <- purrr::map(.x = long_island_bg$geoid,
+                            ~ get_dhc_by_geoid(.x,
+                                               "H2",
+                                               census_key),
                             .progress = TRUE)
                                                
 ```
 
 ```{r}
-
+#function to get the column names from the group variable page.
 get_group_colnames <- function(group){
   base_url <- str_glue("https://api.census.gov/data/2020/dec/dhc/groups/", group, ".html")
   
@@ -162,13 +167,18 @@ get_group_colnames <- function(group){
 
   group_columns |>
     select(Label) |>
-    pivot_wider(names_from = Label, values_from = Label)
+    pivot_wider(names_from = Label, values_from = Label)|>
+    select(-1)|>
+    select(-starts_with("Anno"))|>
+    select(-starts_with("Geographic"))
 }
 
 age_cols <- get_group_colnames("P13")
 household_cols <- get_group_colnames("P16")
-race_cols <- get_group_colnames("P8")
+race_cols <- get_group_colnames("P6")
 tenure_cols <- get_group_colnames("H4")
+household_size_cols <- get_group_colnames("H9")
+urban_rural_cols <- get_group_colnames("H2")
 ```
 
 
