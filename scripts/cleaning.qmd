@@ -84,16 +84,6 @@ li_churches_coordinates|>
 
 
 ```{r}
-#clean up column names, extract geoid
-li_race_data |>
-  janitor::clean_names()|>
-  mutate(geoid = str_remove_all(geoid, pattern = "1500000US"))|>
-  left_join(long_island_bg, by = "geoid")|>
-  mutate(geoid = as.character(geoid)) -> li_race_data_clean
-```
-
-
-```{r}
 #function to clean data from the census calls. 
 clean_census_api_call <- function(df){
   df <- tibble(df)
@@ -104,7 +94,7 @@ clean_census_api_call <- function(df){
     distinct()|>
     row_to_names(1)|>
     select(-ends_with("A"))|>
-    mutate(GEOID = str_remove_all(geoid, pattern = "1500000US"))
+    mutate(GEO_ID = str_remove_all(GEO_ID, pattern = "1500000US"))
 }
 
 cleaned_household <- clean_census_api_call(li_household_data)
@@ -113,6 +103,7 @@ cleaned_tenure <- clean_census_api_call(li_tenure_data)
 cleaned_race <- clean_census_api_call(li_race_data)
 cleaned_household_size <- clean_census_api_call(li_household_size_data)
 cleaned_urban_rural <- clean_census_api_call(li_urban_rural)
+cleaned_total_pop <- clean_census_api_call(li_total_population)
 
 ```
 
@@ -132,6 +123,7 @@ prepped_household <- create_prepped_df(cleaned_household)
 prepped_race <- create_prepped_df(cleaned_race)
 prepped_household_size <- create_prepped_df(cleaned_household_size)
 prepped_urban_rural <- create_prepped_df(cleaned_urban_rural)
+prepped_total_pop <- create_prepped_df(cleaned_total_pop)
 
 ```
 
@@ -141,8 +133,10 @@ colnames(prepped_tenure) <- tenure_cols[1, ]
 colnames(prepped_age) <- age_cols[1, ]
 colnames(prepped_household) <- household_cols[1, ]
 colnames(prepped_race) <- race_cols[1, ]
-colnames(prepped_household_size) <- household_cols[1, ]
+colnames(prepped_household_size) <- household_size_cols[1, ]
 colnames(prepped_urban_rural) <- urban_rural_cols[1, ]
+colnames(prepped_total_pop) <- total_pop_cols[1, ]
+
 
 #clean column names 
 prepped_tenure <- clean_names(prepped_tenure)
@@ -151,18 +145,47 @@ prepped_household <- clean_names(prepped_household)
 prepped_race <- clean_names(prepped_race)
 prepped_household_size <- clean_names(prepped_household_size)
 prepped_urban_rural <- clean_names(prepped_urban_rural)
+prepped_total_pop <- clean_names(prepped_total_pop)
 ```
 
+```{r}
+#create df of all census variables gathered
+li_bg_census_data <- prepped_tenure |>
+  inner_join(prepped_age, by = "geography")|>
+  inner_join(prepped_household, by = "geography")|>
+  inner_join(prepped_race, by = "geography")|>
+  inner_join(prepped_household_size, by = "geography")|>
+  inner_join(prepped_urban_rural, by = "geography")|>
+  inner_join(prepped_total_pop, by = "geography")|>
+  select(-total.x, -total.y, -total.x.x, -total.y.y, -total_not_defined_for_this_file)|>
+  rename(total_population = total)|>
+  relocate(total_population, .after = 1)
+```
+
+```{r}
+#join block group data to get geometries 
+li_bg_census_data <- li_bg_census_data |>
+  inner_join(long_island_bg, by = c("geography" = "geoid"))
+
+li_bg_census_data <- li_bg_census_data |>
+  mutate(across(.cols = -c(geography, geometry),
+                .fns = as.numeric))|>
+  select(-namelsad, -mtfcc, -funcstat)
+```
 
 ```{r}
 #spacial join
 map_data_sf <- st_as_sf(map_data, coords = c("lon", "lat"), crs = 4326)
-li_race_data_clean <- st_as_sf(li_race_data_clean, sf_column_name = "geometry")
-st_crs(li_race_data_clean) <- 4326
+li_bg_census_data <- st_as_sf(li_bg_census_data, sf_column_name = "geometry")
+st_crs(li_bg_census_data) <- 4326
 
-st_crs(li_race_data_clean)
-st_crs(map_data_sf)
-
-
-joined_data <- st_join(map_data_sf, li_race_data_clean, join = st_within)
+joined_data <- st_join(map_data_sf, li_bg_census_data, join = st_within)
 ```
+
+```{r}
+#clean up the joined_data for the final csv!
+church_census_bg_data_final <- joined_data |>
+  select(-c(ICO, city, ZIP, GROUP, SUBSECTION, AFFILIATION, CLASSIFICATION, RULING, DEDUCTIBILITY, FOUNDATION, ACTIVITY, ORGANIZATION, STATUS, TAX_PERIOD, ASSET_CD, INCOME_CD, FILING_REQ_CD, PF_FILING_REQ_CD, ACCT_PD, ASSET_AMT, INCOME_AMT, REVENUE_AMT, NTEE_CD, ntee_code, SORT_NAME, osm_type, boundingbox, class, type, importance, icon, geo_loc_id, geometry, geography))|>
+  clean_names()
+```
+

@@ -26,7 +26,7 @@ key_set(service = "location_api", username = "me")
 
 ```{r}
 #irs data CSV
-eo_ny <- read_csv("~/Desktop/dsc-210-final-proj/li-church-community/data/imported_data/eo_ny.csv")
+eo_ny <- read_csv(".data/imported_data/eo_ny.csv")
 ```
 
 ```{r}
@@ -151,6 +151,11 @@ li_urban_rural <- purrr::map(.x = long_island_bg$geoid,
                                                "H2",
                                                census_key),
                             .progress = TRUE)
+li_total_population <- purrr::map(.x = long_island_bg$geoid,
+                                  ~ get_dhc_by_geoid(.x,
+                                                     "P1",
+                                                     census_key),
+                                  .progress = TRUE)
                                                
 ```
 
@@ -179,6 +184,7 @@ race_cols <- get_group_colnames("P6")
 tenure_cols <- get_group_colnames("H4")
 household_size_cols <- get_group_colnames("H9")
 urban_rural_cols <- get_group_colnames("H2")
+total_pop_cols <- get_group_colnames("P1")
 ```
 
 
